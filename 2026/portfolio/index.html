@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Web3 Portfolio</title>
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        .dashboard {
+            background: #f8f9fa; /* Light grey background to stand out */
+            padding: 20px;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+        }
+        .dashboard h2 { margin-top: 0; }
+        .btn-connect {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn-connect:hover { background-color: #0056b3; }
+        .token-data { 
+            margin-top: 15px; 
+            padding: 10px; 
+            background: white; 
+            border-radius: 5px; 
+            border: 1px solid #ddd;
+        }
+        .token-data p { margin: 8px 0; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -14,17 +43,93 @@
         </header>
 
         <main>
+            <section id="demo" class="dashboard">
+                <h2>Live Demo: Greenland Token</h2>
+                <p>Connect your Sepolia wallet to view your GRD balance directly from the blockchain.</p>
+                
+                <button id="connectBtn" class="btn-connect">Connect Wallet</button>
+                
+                <div id="tokenInfo" class="token-data" style="display:none;">
+                    <p><strong>Status:</strong> <span id="status" style="color: green;">Connected</span></p>
+                    <p><strong>Wallet:</strong> <span id="userAddress">...</span></p>
+                    <hr>
+                    <p><strong>Token Name:</strong> <span id="tokenName">...</span></p>
+                    <p><strong>Your Balance:</strong> <span id="tokenBalance">...</span> <span id="tokenSymbol"></span></p>
+                </div>
+            </section>
+
             <section id="projects">
                 <h2>My Projects</h2>
                 <div class="project-list">
                     <div class="card">
+                        <h3>ERC-20 Token Deployment</h3>
+                        <p>Deployed a standard ERC-20 token ("Greenland") to the Sepolia Testnet using OpenZeppelin and Remix.</p>
+                    </div>
+
+                    <div class="card">
                         <h3>Coming Soon...</h3>
-                        <p>Day 1: Project Description; what you achived today.</p>
+                        <p>Day 2: Next Project Description.</p>
                     </div>
                 </div>
             </section>
         </main>
     </div>
+
     <script src="script.js"></script>
+
+    <script type="module">
+        import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+
+        // !!! TODO: Replace with your actual Sepolia Contract Address !!!
+        const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE"; 
+
+        const abi = [
+            "function name() view returns (string)",
+            "function symbol() view returns (string)",
+            "function balanceOf(address) view returns (uint256)",
+            "function decimals() view returns (uint8)"
+        ];
+
+        const connectBtn = document.getElementById("connectBtn");
+        const tokenInfo = document.getElementById("tokenInfo");
+
+        connectBtn.onclick = async () => {
+            if (!window.ethereum) {
+                alert("MetaMask is not installed!");
+                return;
+            }
+
+            try {
+                // 1. Connect to MetaMask
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const address = await signer.getAddress();
+
+                // 2. Initialize Contract
+                const tokenContract = new ethers.Contract(contractAddress, abi, provider);
+
+                // 3. Read Data
+                const name = await tokenContract.name();
+                const symbol = await tokenContract.symbol();
+                const decimals = await tokenContract.decimals();
+                const rawBalance = await tokenContract.balanceOf(address);
+                const formattedBalance = ethers.formatUnits(rawBalance, decimals);
+
+                // 4. Update UI
+                document.getElementById("userAddress").innerText = address.slice(0, 6) + "..." + address.slice(-4);
+                document.getElementById("tokenName").innerText = name;
+                document.getElementById("tokenSymbol").innerText = symbol;
+                document.getElementById("tokenBalance").innerText = formattedBalance;
+
+                // 5. Toggle Views
+                connectBtn.style.display = "none";
+                tokenInfo.style.display = "block";
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Connection failed! Make sure you are on the Sepolia Network.");
+            }
+        };
+    </script>
 </body>
 </html>
